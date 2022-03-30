@@ -1,0 +1,5 @@
+Real[[:space:]]data[[:space:]]analysis filter=lfs diff=lfs merge=lfs -text
+SCVMPLN_2.2.tar.gz filter=lfs diff=lfs merge=lfs -text
+Simulation filter=lfs diff=lfs merge=lfs -text
+R[[:space:]]package filter=lfs diff=lfs merge=lfs -text
+README.md filter=lfs diff=lfs merge=lfs -text
