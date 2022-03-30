@@ -1,0 +1,37 @@
+## test
+library(Seurat)
+library(SCVMPLN)
+VMPLN_list<-VMPLN_init(expression_profile = t(example_data),
+                       celltypes_num = 3,
+                       celltypes_ref = NULL,
+                       ls_est = "TSS",
+                       gene_GRN = rownames(t(example_data)),
+                       HVG_model_num = 1000,
+                       zero_GRN = NULL,
+                       preprocess_Control = list(HVG_num = nrow(t(example_data)),npc = 50,run_umap = TRUE,label_umap = NULL, cluster_method = "Kmeans",resolution = 0.8),
+                       core_num = 1)
+
+
+
+lambdamax_vec<-exact_lambdamax(VMPLN_list = VMPLN_list,lambda_max_ref = 10,
+                               Theta_Control = list(penalize_diagonal = FALSE),
+                               U_fix = FALSE,
+                               verbose = TRUE,
+                               core_num = 1)
+
+## Build path of lambda (Example)
+lambda_point<-c(1e-6,unique(lambdamax_vec))
+lambda_path<-sort(c(lambda_point,lambda_point[-1] + lambda_point[-length(lambda_point)]))
+##Run
+VMPLN_res_list<-list()
+for(l in 1:length(lambda_path)){
+  ##
+  print(l)
+  ##
+  VMPLN_list<-VMPLN_main(VMPLN_list = VMPLN_list,lambda_use = lambda_path[l],
+                         Theta_Control = list(penalize_diagonal = FALSE),
+                         U_fix = FALSE,
+                         verbose = FALSE,
+                         core_num = 1)
+  VMPLN_res_list[[l]]<-VMPLN_list
+}

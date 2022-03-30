@@ -1,0 +1,29 @@
+library(usethis)
+# Run this code after opening the new package in RStudio
+
+# Set up the data-raw directory and data processing script
+# You can use any name you want for your data
+usethis::use_data_raw(name = 'example_data')
+
+# This script in the R directory will contain the documentation.
+# You can use any name you want.
+file.create("R/data.R")
+
+# Initialize git repository (optional)
+usethis::use_git()
+
+
+##------------------------
+
+
+
+load("D:/Project/Pro_VMPLN/package/20220327/SCVMPLN/data-raw/example_data.Rdata")
+
+# Data cleaning code here...
+# (Do NOT put data analysis code here!)
+
+# This should be the last line.
+# Note that names are unquoted.
+# I like using overwrite = T so everytime I run the script the 
+# updated objects are saved, but the default is overwrite = F
+usethis::use_data(example_data, overwrite = T)

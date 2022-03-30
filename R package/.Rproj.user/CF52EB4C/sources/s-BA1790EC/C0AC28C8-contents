@@ -1,0 +1,1062 @@
+rm(list = ls())
+##
+library(RColorBrewer)
+
+library(ggplot2)
+######
+FUN_summary<-function(array_use){
+  reptime<-dim(array_use)[1]
+  res_mat<-matrix(NA,nrow = reptime,ncol = 9)
+  ##mean min maxmis
+  ##AUPR ratio, EPR, ETPR
+  for(rep in 1:reptime){
+    res_mat[rep,]<-c(mean((array_use[rep,1:3,3])),
+                     mean((array_use[rep,1:3,5])),
+                     mean((array_use[rep,1:3,7])),
+                     min((array_use[rep,1:3,3])),
+                     min((array_use[rep,1:3,5])),
+                     min((array_use[rep,1:3,7])),
+                     array_use[rep,5,3],
+                     array_use[rep,5,5],
+                     array_use[rep,5,7])
+  }
+  ##
+  return(res_mat)
+}
+reform<-function(mat_use,nrow_use = 5){
+  row_num<-nrow(mat_use)
+  ##
+  result_array<-array(NA,dim = c(row_num,nrow_use,ncol(mat_use)/nrow_use))
+  ##
+  for(i in 1:row_num){
+    result_array[i,,]<-matrix(mat_use[i,],nrow = nrow_use,byrow = FALSE)
+  }
+  ##
+  return(result_array)
+}
+
+########
+gener <- "MPLN"
+# gener <- "Compositional"
+#####################
+# setwd("D:/Project/Pro_VMPLN/code/simulation_1.27.1/result_new/PIDC_nor")
+setwd("D:/Project/Pro_VMPLN/code/simulation_1.27.1/result_new/PIDC")
+file_name_PIDC<-dir()
+setwd("D:/Project/Pro_VMPLN/code/simulation_1.27.1/result_new/addLPGM")
+file_name_LPGM<-dir()
+# setwd(dir = "D:/Project/Pro_VMPLN/code/simulation_1.27.1/result_new/5")
+setwd(dir = "D:/Project/Pro_VMPLN/code/simulation_1.27.1/result_new/latest")
+# setwd(dir = "C://Users//DELL//Desktop//Project//Pro_VMPLN//code//simulation_1.27//result_new//1.1")
+# setwd(dir = "C://Users//DELL//Desktop//Project//Pro_VMPLN//code//simulation_1.27.1//result")
+file_name<-dir()
+file_name_spilt<-strsplit(file_name,"_")
+###
+sample_vec<-c(1000,2000)
+dim_use_vec<-c(100,300,500)
+dropout_vec<-c(1,2)
+# group_vec<-c(3,5)
+graph_vec<-paste("nettype",c("ER-graph","HUB-graph","AFF-graph","PA-graph"),sep = "")
+# graph_vec<-paste("nettype",c("ER-graph","HUB-graph"),sep = "")
+ARI_vec<-c(1,2,3)
+###
+library(stringr)
+num_file<-length(file_name_spilt)
+index_mat<-matrix(NA,nrow = 0,ncol = 5)
+for(l in 1:num_file){
+  sample_index<-which(sample_vec == as.numeric(paste(str_extract_all((file_name_spilt[[l]][3]),"[0-9]")[[1]],collapse = "")))
+  dim_use<-as.numeric(paste(str_extract_all((file_name_spilt[[l]][4]),"[0-9]")[[1]],collapse = ""))
+  dim_index<-which(dim_use_vec == dim_use)
+  # sample_index<-which(sample_vec == as.numeric(paste(str_extract_all((file_name_spilt[[l]][8]),"[0-9]")[[1]],collapse = ""))/dim_use)
+  
+  dropout_index<-as.numeric(paste(str_extract_all((file_name_spilt[[l]][5]),"[0-9]")[[1]],collapse = ""))
+  # group_index<-which(group_vec == as.numeric(paste(str_extract_all((file_name_spilt[[l]][6]),"[0-9]")[[1]],collapse = "")))
+  graph_index<-which(graph_vec == (file_name_spilt[[l]][6]))
+  ARI_index<-which(ARI_vec == as.numeric(paste(str_extract_all((file_name_spilt[[l]][7]),"[0-9]")[[1]])))
+  # index_mat<-rbind(index_mat,c(dim_index,sample_index,dropout_index,group_index,graph_index))
+  index_mat<-rbind(index_mat,c(sample_index,dim_index,dropout_index,graph_index,ARI_index))
+}
+# index_mat<-index_mat[-nrow(index_mat),]
+index_mat<-index_mat[which(index_mat[,3]!=3),]
+#####################
+
+###
+AUPR_plotdata<-matrix(NA,nrow = 0,ncol = 8)
+AUPR_plotdata_signed<-matrix(NA,nrow = 0,ncol = 8)
+EPR_plotdata<-matrix(NA,nrow = 0,ncol = 8)
+ETPR_plotdata<-matrix(NA,nrow = 0,ncol = 8)
+for(graph_index in 1:length(graph_vec)){
+  for(dropout_index in 1:length(dropout_vec)){
+    for(group_index in 1){
+      for(dim_index in 1:length(dim_use_vec)){
+        for(ARI_index in 1:length(ARI_vec)){
+          file_index_choose<-which(rowSums(abs(t(t(index_mat) - c(sample_index,dim_index,dropout_index,graph_index,ARI_index)))) == 0)
+          if(length(file_index_choose)>0){
+            load(file_name[file_index_choose])
+            ##
+            ##VMPLN pendiag
+            repres_VMPLN_pendiag_BIC_VMICL<-FUN_summary(reform(mat_use  = repres_all[[1]]$repres_VMPLN[,14:73],nrow = 5))
+            repres_VMPLN_pendiag_BIC_VICL<-FUN_summary(reform(mat_use  = repres_all[[1]]$repres_VMPLN[,74:133],nrow = 5))
+            repres_VMPLN_pendiag_density<-FUN_summary(reform(mat_use  = repres_all[[1]]$repres_VMPLN[,134:193],nrow = 5))
+            repres_VMPLN_pendiag_density2<-FUN_summary(reform(mat_use  = repres_all[[1]]$repres_VMPLN[,194:253],nrow = 5))
+            
+            # ##VMPLN notpendiag
+            # repres_VMPLN_notpendiag_BIC_VMICL<-FUN_summary(reform(mat_use  = repres_all[[2]]$repres_VMPLN[,14:73],nrow = 5))
+            # repres_VMPLN_notpendiag_BIC_VICL<-FUN_summary(reform(mat_use  = repres_all[[2]]$repres_VMPLN[,74:133],nrow = 5))
+            # repres_VMPLN_notpendiag_density<-FUN_summary(reform(mat_use  = repres_all[[2]]$repres_VMPLN[,134:193],nrow = 5))
+            # repres_VMPLN_notpendiag_density2<-FUN_summary(reform(mat_use  = repres_all[[2]]$repres_VMPLN[,194:253],nrow = 5))
+            
+            ##VPLN pendiag
+            if(!is.null(repres_all[[3]]$repres_VPLN)){
+              repres_VPLN_pendiag_BIC<-FUN_summary(reform(mat_use  = repres_all[[3]]$repres_VPLN[,2:61],nrow = 5))
+              repres_VPLN_pendiag_density<-FUN_summary(reform(mat_use  = repres_all[[3]]$repres_VPLN[,62:121],nrow = 5))
+              repres_VPLN_pendiag_density2<-FUN_summary(reform(mat_use  = repres_all[[3]]$repres_VPLN[,122:181],nrow = 5)) 
+            }else{
+              repres_VPLN_pendiag_BIC<-matrix(NA,nrow = nrow(repres_VMPLN_pendiag_BIC_VMICL),ncol = ncol(repres_VMPLN_pendiag_BIC_VMICL))
+              repres_VPLN_pendiag_density<-matrix(NA,nrow = nrow(repres_VMPLN_pendiag_BIC_VMICL),ncol = ncol(repres_VMPLN_pendiag_BIC_VMICL))
+              repres_VPLN_pendiag_density2<-matrix(NA,nrow = nrow(repres_VMPLN_pendiag_BIC_VMICL),ncol = ncol(repres_VMPLN_pendiag_BIC_VMICL))
+            }
+            
+            ##VPLN notpendiag
+            # repres_VPLN_notpendiag_BIC_nonsigned<-reform(mat_use  = repres_all[[4]]$repres_VPLN[,2:41],nrow = 5)
+            # repres_VPLN_notpendiag_density_nonsigned<-reform(mat_use  = repres_all[[4]]$repres_VPLN[,42:81],nrow = 5)
+            # repres_VPLN_notpendiag_BIC_signed<-reform(mat_use  = repres_all[[4]]$repres_VPLN[,82:121],nrow = 5)
+            # repres_VPLN_notpendiag_density_signed<-reform(mat_use  = repres_all[[4]]$repres_VPLN[,122:161],nrow = 5)
+            
+            ##Glasso pendiag
+            repres_Glasso_pendiag_BIC<-FUN_summary(reform(mat_use  = repres_all[[5]]$repres_Glasso[,2:61],nrow = 5))
+            repres_Glasso_pendiag_density<-FUN_summary(reform(mat_use  = repres_all[[5]]$repres_Glasso[,62:121],nrow = 5))
+            repres_Glasso_pendiag_density2<-FUN_summary(reform(mat_use  = repres_all[[5]]$repres_Glasso[,122:181],nrow = 5))
+            
+            ##Glasso notpendiag
+            # repres_Glasso_notpendiag_BIC_nonsigned<-reform(mat_use  = repres_all[[6]]$repres_Glasso[,2:41],nrow = 5)
+            # repres_Glasso_notpendiag_density_nonsigned<-reform(mat_use  = repres_all[[6]]$repres_Glasso[,42:81],nrow = 5)
+            # repres_Glasso_notpendiag_BIC_signed<-reform(mat_use  = repres_all[[6]]$repres_Glasso[,82:121],nrow = 5)
+            # repres_Glasso_notpendiag_density_signed<-reform(mat_use  = repres_all[[6]]$repres_Glasso[,122:161],nrow = 5)
+            
+            # ##GENIE3
+            # repres_GENIE3_ori<-FUN_summary(reform(mat_use  = repres_all[[7]]$repres_GENIE3[,2:61],nrow = 5))
+            # repres_GENIE3_density<-FUN_summary(reform(mat_use  = repres_all[[7]]$repres_GENIE3[,62:121],nrow = 5))
+            # repres_GENIE3_density2<-FUN_summary(reform(mat_use  = repres_all[[7]]$repres_GENIE3[,122:181],nrow = 5))
+            ##GENIE3
+            repres_GENIE3_ori<-FUN_summary(reform(mat_use  = repres_all[[13]]$repres_GENIE3[,2:61],nrow = 5))
+            repres_GENIE3_density<-FUN_summary(reform(mat_use  = repres_all[[13]]$repres_GENIE3[,62:121],nrow = 5))
+            repres_GENIE3_density2<-FUN_summary(reform(mat_use  = repres_all[[13]]$repres_GENIE3[,122:181],nrow = 5))
+            
+            ##PPCOR
+            repres_ppcor_pearson_ori<-FUN_summary(reform(mat_use  = repres_all[[8]]$repres_ppcor[,2:61],nrow = 5))
+            repres_ppcor_pearson_density<-FUN_summary(reform(mat_use  = repres_all[[8]]$repres_ppcor[,62:121],nrow = 5))
+            repres_ppcor_pearson_density2<-FUN_summary(reform(mat_use  = repres_all[[8]]$repres_ppcor[,122:181],nrow = 5))
+            
+            # ##LPGM
+            # repres_LPGM_ori_nonsigned<-reform(mat_use  = repres_all[[11]]$repres_LPGM[,2:41],nrow = 5)
+            # repres_LPGM_density_nonsigned<-reform(mat_use  = repres_all[[11]]$repres_LPGM[,],nrow = 5)
+            
+            ##SCODE
+            repres_SCODE_ori<-FUN_summary(reform(mat_use  = repres_all[[11]]$repres_SCODE[,2:61],nrow = 5))
+            repres_SCODE_density<-FUN_summary(reform(mat_use  = repres_all[[11]]$repres_SCODE[,62:121],nrow = 5))
+            repres_SCODE_density2<-FUN_summary(reform(mat_use  = repres_all[[11]]$repres_SCODE[,122:181],nrow = 5))
+            
+            ##PIDC
+            file_index_choose<-which(rowSums(abs(t(t(index_mat) - c(sample_index,dim_index,dropout_index,graph_index,ARI_index)))) == 0)
+            # file_PIDC<-paste("C://Users//DELL//Desktop//Project//Pro_VMPLN//code//simulation_1.27.1//result_new//PIDC//repres_PIDC_sam1000_dim",dim_use_vec[dim_index],"_drop",dropout_index,"_",graph_vec[graph_index],"_ARI",ARI_index,"_clustermethod_Kmeans_library_size_est_TSS.Rdata",
+            #                  sep = "")
+            file_PIDC<-paste("D:/Project/Pro_VMPLN/code/simulation_1.27.1/result_new/PIDC/repres_PIDC_sam1000_dim",dim_use_vec[dim_index],"_drop",dropout_index,"_",graph_vec[graph_index],"_ARI",ARI_index,"_clustermethod_Kmeans_library_size_est_TSS.Rdata",
+                             sep = "")
+            # file_PIDC<-paste("D:/Project/Pro_VMPLN/code/simulation_1.27.1/result_new/PIDC_nor/repres_PIDC_sam1000_dim",dim_use_vec[dim_index],"_drop",dropout_index,"_",graph_vec[graph_index],"_ARI",ARI_index,"_clustermethod_Kmeans_library_size_est_TSS.Rdata",
+            #                  sep = "")
+
+            repres_PIDC_ori<-NULL
+            repres_PIDC_density<-NULL
+            repres_PIDC_density2<-NULL
+            if(file_PIDC %in% paste("D:/Project/Pro_VMPLN/code/simulation_1.27.1/result_new/PIDC/",file_name_PIDC,sep = "")){
+            # if(file_PIDC %in% paste("D:/Project/Pro_VMPLN/code/simulation_1.27.1/result_new/PIDC_nor/",file_name_PIDC,sep = "")){
+              load(file_PIDC)
+              repres_PIDC_ori<-FUN_summary(reform(mat_use  = repres_PIDC$repres_PIDC[,2:61],nrow = 5))
+              repres_PIDC_density<-FUN_summary(reform(mat_use  = repres_PIDC$repres_PIDC[,62:121],nrow = 5))
+              repres_PIDC_density2<-FUN_summary(reform(mat_use  = repres_PIDC$repres_PIDC[,122:181],nrow = 5))
+            }else{
+              repres_PIDC_ori<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+              repres_PIDC_density<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+              repres_PIDC_density2<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            }
+            # repres_PIDC_ori<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            # repres_PIDC_density<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            # repres_PIDC_density2<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            
+            # ##LPGM
+            # file_index_choose<-which(rowSums(abs(t(t(index_mat) - c(sample_index,dim_index,dropout_index,graph_index,ARI_index)))) == 0)
+            # # file_PIDC<-paste("C://Users//DELL//Desktop//Project//Pro_VMPLN//code//simulation_1.27.1//result_new//PIDC//repres_PIDC_sam1000_dim",dim_use_vec[dim_index],"_drop",dropout_index,"_",graph_vec[graph_index],"_ARI",ARI_index,"_clustermethod_Kmeans_library_size_est_TSS.Rdata",
+            # #                  sep = "")
+            # file_LPGM<-paste("D:/Project/Pro_VMPLN/code/simulation_1.27.1/result_new/addLPGM/repres_all_sam1000_dim",dim_use_vec[dim_index],"_drop",dropout_index,"_",graph_vec[graph_index],"_ARI",ARI_index,"_clustermethod_Kmeans_library_size_est_TSS.Rdata",
+            #                  sep = "")
+            # repres_LPGM_ori<-NULL
+            # repres_LPGM_density<-NULL
+            # repres_LPGM_density2<-NULL
+            # if(file_LPGM %in% paste("D:/Project/Pro_VMPLN/code/simulation_1.27.1/result_new/addLPGM/",file_name_LPGM,sep = "")){
+            #   load(file_LPGM)
+            #   repres_LPGM_ori<-FUN_summary(reform(mat_use  = repres_all[[12]]$repres_LPGM[,2:61],nrow = 5))
+            #   repres_LPGM_density<-FUN_summary(reform(mat_use  = repres_all[[12]]$repres_LPGM[,62:121],nrow = 5))
+            #   repres_LPGM_density2<-FUN_summary(reform(mat_use  = repres_all[[12]]$repres_LPGM[,122:181],nrow = 5))
+            # }else{
+            #   repres_LPGM_ori<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            #   repres_LPGM_density<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            #   repres_LPGM_density2<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            # }
+            
+            ##LPGM nor
+            repres_LPGM_ori<-FUN_summary(reform(mat_use  = repres_all[[14]]$repres_LPGM[,2:61],nrow = 5))
+            repres_LPGM_density<-FUN_summary(reform(mat_use  = repres_all[[14]]$repres_LPGM[,62:121],nrow = 5))
+            repres_LPGM_density2<-FUN_summary(reform(mat_use  = repres_all[[14]]$repres_LPGM[,122:181],nrow = 5))
+            
+            
+            
+            # ###############
+            # ##signed
+            # ##VMPLN pendiag
+            # repres_VMPLN_pendiag_BIC_VMICL_signed<-FUN_summary(reform(mat_use  = repres_all[[1]]$repres_VMPLN[,(14:73)+240],nrow = 5))
+            # repres_VMPLN_pendiag_BIC_VICL_signed<-FUN_summary(reform(mat_use  = repres_all[[1]]$repres_VMPLN[,(74:133)+240],nrow = 5))
+            # repres_VMPLN_pendiag_density_signed<-FUN_summary(reform(mat_use  = repres_all[[1]]$repres_VMPLN[,(134:193)+240],nrow = 5))
+            # repres_VMPLN_pendiag_density2_signed<-FUN_summary(reform(mat_use  = repres_all[[1]]$repres_VMPLN[,(194:253)+240],nrow = 5))
+            # 
+            # # ##VMPLN notpendiag
+            # # repres_VMPLN_notpendiag_BIC_VMICL<-FUN_summary(reform(mat_use  = repres_all[[2]]$repres_VMPLN[,14:73],nrow = 5))
+            # # repres_VMPLN_notpendiag_BIC_VICL<-FUN_summary(reform(mat_use  = repres_all[[2]]$repres_VMPLN[,74:133],nrow = 5))
+            # # repres_VMPLN_notpendiag_density<-FUN_summary(reform(mat_use  = repres_all[[2]]$repres_VMPLN[,134:193],nrow = 5))
+            # # repres_VMPLN_notpendiag_density2<-FUN_summary(reform(mat_use  = repres_all[[2]]$repres_VMPLN[,194:253],nrow = 5))
+            # 
+            # ##VPLN pendiag
+            # if(!is.null(repres_all[[3]]$repres_VPLN)){
+            #   repres_VPLN_pendiag_BIC_signed<-FUN_summary(reform(mat_use  = repres_all[[3]]$repres_VPLN[,(2:61)+180],nrow = 5))
+            #   repres_VPLN_pendiag_density_signed<-FUN_summary(reform(mat_use  = repres_all[[3]]$repres_VPLN[,(62:121)+180],nrow = 5))
+            #   repres_VPLN_pendiag_density2_signed<-FUN_summary(reform(mat_use  = repres_all[[3]]$repres_VPLN[,(122:181)+180],nrow = 5)) 
+            # }else{
+            #   repres_VPLN_pendiag_BIC_signed<-matrix(NA,nrow = nrow(repres_VMPLN_pendiag_BIC_VMICL_signed),ncol = ncol(repres_VMPLN_pendiag_BIC_VMICL_signed))
+            #   repres_VPLN_pendiag_density_signed<-matrix(NA,nrow = nrow(repres_VMPLN_pendiag_BIC_VMICL_signed),ncol = ncol(repres_VMPLN_pendiag_BIC_VMICL_signed))
+            #   repres_VPLN_pendiag_density2_signed<-matrix(NA,nrow = nrow(repres_VMPLN_pendiag_BIC_VMICL_signed),ncol = ncol(repres_VMPLN_pendiag_BIC_VMICL_signed))
+            # }
+            # 
+            # ##VPLN notpendiag
+            # # repres_VPLN_notpendiag_BIC_nonsigned<-reform(mat_use  = repres_all[[4]]$repres_VPLN[,2:41],nrow = 5)
+            # # repres_VPLN_notpendiag_density_nonsigned<-reform(mat_use  = repres_all[[4]]$repres_VPLN[,42:81],nrow = 5)
+            # # repres_VPLN_notpendiag_BIC_signed<-reform(mat_use  = repres_all[[4]]$repres_VPLN[,82:121],nrow = 5)
+            # # repres_VPLN_notpendiag_density_signed<-reform(mat_use  = repres_all[[4]]$repres_VPLN[,122:161],nrow = 5)
+            # 
+            # ##Glasso pendiag
+            # repres_Glasso_pendiag_BIC_signed<-FUN_summary(reform(mat_use  = repres_all[[5]]$repres_Glasso[,(2:61)+180],nrow = 5))
+            # repres_Glasso_pendiag_density_signed<-FUN_summary(reform(mat_use  = repres_all[[5]]$repres_Glasso[,(62:121)+180],nrow = 5))
+            # repres_Glasso_pendiag_density2_signed<-FUN_summary(reform(mat_use  = repres_all[[5]]$repres_Glasso[,(122:181)+180],nrow = 5))
+            # 
+            # ##Glasso notpendiag
+            # # repres_Glasso_notpendiag_BIC_nonsigned<-reform(mat_use  = repres_all[[6]]$repres_Glasso[,2:41],nrow = 5)
+            # # repres_Glasso_notpendiag_density_nonsigned<-reform(mat_use  = repres_all[[6]]$repres_Glasso[,42:81],nrow = 5)
+            # # repres_Glasso_notpendiag_BIC_signed<-reform(mat_use  = repres_all[[6]]$repres_Glasso[,82:121],nrow = 5)
+            # # repres_Glasso_notpendiag_density_signed<-reform(mat_use  = repres_all[[6]]$repres_Glasso[,122:161],nrow = 5)
+            # 
+            # ##GENIE3
+            # repres_GENIE3_ori_signed<-matrix(NA,nrow = nrow(repres_Glasso_pendiag_BIC_signed),ncol = ncol(repres_Glasso_pendiag_BIC_signed))
+            # repres_GENIE3_density_signed<-matrix(NA,nrow = nrow(repres_Glasso_pendiag_BIC_signed),ncol = ncol(repres_Glasso_pendiag_BIC_signed))
+            # repres_GENIE3_density2_signed<-matrix(NA,nrow = nrow(repres_Glasso_pendiag_BIC_signed),ncol = ncol(repres_Glasso_pendiag_BIC_signed))
+            # 
+            # ##ppcor
+            # repres_ppcor_pearson_ori_signed<-FUN_summary(reform(mat_use  = repres_all[[8]]$repres_ppcor[,(2:61)+180],nrow = 5))
+            # repres_ppcor_pearson_density_signed<-FUN_summary(reform(mat_use  = repres_all[[8]]$repres_ppcor[,(62:121)+180],nrow = 5))
+            # repres_ppcor_pearson_density2_signed<-FUN_summary(reform(mat_use  = repres_all[[8]]$repres_ppcor[,(122:181)+180],nrow = 5))
+            # 
+            # # ##LPGM
+            # # repres_LPGM_ori_nonsigned<-reform(mat_use  = repres_all[[11]]$repres_LPGM[,2:41],nrow = 5)
+            # # repres_LPGM_density_nonsigned<-reform(mat_use  = repres_all[[11]]$repres_LPGM[,],nrow = 5)
+            # 
+            # ##SCODE
+            # repres_SCODE_ori_signed<-FUN_summary(reform(mat_use  = repres_all[[11]]$repres_SCODE[,(2:61)+180],nrow = 5))
+            # repres_SCODE_density_signed<-FUN_summary(reform(mat_use  = repres_all[[11]]$repres_SCODE[,(62:121)+180],nrow = 5))
+            # repres_SCODE_density2_signed<-FUN_summary(reform(mat_use  = repres_all[[11]]$repres_SCODE[,(122:181)+180],nrow = 5))
+            # 
+            # ##PIDC
+            # # file_index_choose<-which(rowSums(abs(t(t(index_mat) - c(sample_index,dim_index,dropout_index,graph_index,ARI_index)))) == 0)
+            # # # file_PIDC<-paste("C://Users//DELL//Desktop//Project//Pro_VMPLN//code//simulation_1.27.1//result_new//PIDC//repres_PIDC_sam1000_dim",dim_use_vec[dim_index],"_drop",dropout_index,"_",graph_vec[graph_index],"_ARI",ARI_index,"_clustermethod_Kmeans_library_size_est_TSS.Rdata",
+            # # #                  sep = "")
+            # # file_PIDC<-paste("C://Users//DELL//Desktop//Project//Pro_VMPLN//code//simulation_1.27//result_new//PIDC//repres_PIDC_sam1000_dim",dim_use_vec[dim_index],"_drop",dropout_index,"_",graph_vec[graph_index],"_ARI",ARI_index,"_clustermethod_Kmeans_library_size_est_TSS.Rdata",
+            # #                  sep = "")
+            # # 
+            # # repres_PIDC_ori<-NULL
+            # # repres_PIDC_density<-NULL
+            # # repres_PIDC_density2<-NULL
+            # # if(file_PIDC %in% paste("C://Users//DELL//Desktop//Project//Pro_VMPLN//code//simulation_1.27//result_new//PIDC//",file_name_PIDC,sep = "")){
+            # #   load(file_PIDC)
+            # #   repres_PIDC_ori<-FUN_summary(reform(mat_use  = repres_PIDC$repres_PIDC[,2:61],nrow = 5))
+            # #   repres_PIDC_density<-FUN_summary(reform(mat_use  = repres_PIDC$repres_PIDC[,62:121],nrow = 5))
+            # #   repres_PIDC_density2<-FUN_summary(reform(mat_use  = repres_PIDC$repres_PIDC[,122:181],nrow = 5))
+            # # }else{
+            # #   repres_PIDC_ori<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            # #   repres_PIDC_density<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            # #   repres_PIDC_density2<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            # # }
+            # repres_PIDC_ori_signed<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            # repres_PIDC_density_signed<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            # repres_PIDC_density2_signed<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            # 
+            # ##LPGM
+            # repres_LPGM_ori_signed<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            # repres_LPGM_density_signed<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            # repres_LPGM_density2_signed<-matrix(NA,nrow = nrow(repres_SCODE_ori),ncol = ncol(repres_SCODE_ori))
+            
+            ####
+            reptime<-nrow(repres_VMPLN_pendiag_BIC_VMICL)
+            num_method<-8
+            ######################
+            ##AUPR
+            AUPR_plotdata<-rbind(AUPR_plotdata,cbind(rep(graph_vec[graph_index],reptime * 3 * num_method),
+                                                     rep(ifelse(dropout_index == 1,"Low dropout",ifelse(dropout_index == 2,"Medium dropout","High dropout")),reptime * 3 * num_method),
+                                                     rep(dim_use_vec[dim_index],reptime * 3 * num_method),
+                                                     rep(ARI_vec[ARI_index],reptime * 3 * num_method),
+                                                     rep(rep(c("Mean","Min","MMC"),each = reptime),num_method),
+                                                     rep(c("VMPLN","VPLN","LPGM","Glasso","GENIE3","PPCOR","SCODE","PIDC"),each = reptime * 3),
+                                                     c(as.vector(repres_VMPLN_pendiag_BIC_VICL[,c(1,4,7)]),
+                                                       as.vector(repres_VPLN_pendiag_BIC[,c(1,4,7)]),
+                                                       as.vector(repres_LPGM_ori[,c(1,4,7)]),
+                                                       as.vector(repres_Glasso_pendiag_BIC[,c(1,4,7)]),
+                                                       as.vector(repres_GENIE3_ori[,c(1,4,7)]),
+                                                       as.vector(repres_ppcor_pearson_ori[,c(1,4,7)]),
+                                                       as.vector(repres_SCODE_ori[,c(1,4,7)]),
+                                                       as.vector(repres_PIDC_ori[,c(1,4,7)])),
+                                                     rep("original",reptime * 3 * num_method)))
+            
+            AUPR_plotdata<-rbind(AUPR_plotdata,cbind(rep(graph_vec[graph_index],reptime * 3 * num_method),
+                                                     rep(ifelse(dropout_index == 1,"Low dropout",ifelse(dropout_index == 2,"Medium dropout","High dropout")),reptime * 3 * num_method),
+                                                     rep(dim_use_vec[dim_index],reptime * 3 * num_method),
+                                                     rep(ARI_vec[ARI_index],reptime * 3 * num_method),
+                                                     rep(rep(c("Mean","Min","MMC"),each = reptime),num_method),
+                                                     rep(c("VMPLN","VPLN","LPGM","Glasso","GENIE3","PPCOR","SCODE","PIDC"),each = reptime * 3),
+                                                     c(as.vector(repres_VMPLN_pendiag_density[,c(1,4,7)]),
+                                                       as.vector(repres_VPLN_pendiag_density[,c(1,4,7)]),
+                                                       as.vector(repres_LPGM_density[,c(1,4,7)]),
+                                                       as.vector(repres_Glasso_pendiag_density[,c(1,4,7)]),
+                                                       as.vector(repres_GENIE3_density[,c(1,4,7)]),
+                                                       as.vector(repres_ppcor_pearson_density[,c(1,4,7)]),
+                                                       as.vector(repres_SCODE_density[,c(1,4,7)]),
+                                                       as.vector(repres_PIDC_density[,c(1,4,7)])),
+                                                     rep("density1",reptime * 3 * num_method)))
+            
+            AUPR_plotdata<-rbind(AUPR_plotdata,cbind(rep(graph_vec[graph_index],reptime * 3 * num_method),
+                                                     rep(ifelse(dropout_index == 1,"Low dropout",ifelse(dropout_index == 2,"Medium dropout","High dropout")),reptime * 3 * num_method),
+                                                     rep(dim_use_vec[dim_index],reptime * 3 * num_method),
+                                                     rep(ARI_vec[ARI_index],reptime * 3 * num_method),
+                                                     rep(rep(c("Mean","Min","MMC"),each = reptime),num_method),
+                                                     rep(c("VMPLN","VPLN","LPGM","Glasso","GENIE3","PPCOR","SCODE","PIDC"),each = reptime * 3),
+                                                     c(as.vector(repres_VMPLN_pendiag_density2[,c(1,4,7)]),
+                                                       as.vector(repres_VPLN_pendiag_density2[,c(1,4,7)]),
+                                                       as.vector(repres_LPGM_density2[,c(1,4,7)]),
+                                                       as.vector(repres_Glasso_pendiag_density2[,c(1,4,7)]),
+                                                       as.vector(repres_GENIE3_density2[,c(1,4,7)]),
+                                                       as.vector(repres_ppcor_pearson_density2[,c(1,4,7)]),
+                                                       as.vector(repres_SCODE_density2[,c(1,4,7)]),
+                                                       as.vector(repres_PIDC_density2[,c(1,4,7)])),
+                                                     rep("density2",reptime * 3 * num_method)))
+            #####################################
+            
+            ##EPR
+            EPR_plotdata<-rbind(EPR_plotdata,cbind(rep(graph_vec[graph_index],reptime * 3 * num_method),
+                                                   rep(ifelse(dropout_index == 1,"Low dropout",ifelse(dropout_index == 2,"Medium dropout","High dropout")),reptime * 3 * num_method),
+                                                     rep(dim_use_vec[dim_index],reptime * 3 * num_method),
+                                                     rep(ARI_vec[ARI_index],reptime * 3 * num_method),
+                                                     rep(rep(c("Mean","Min","MMC"),each = reptime),num_method),
+                                                     rep(c("VMPLN","VPLN","LPGM","Glasso","GENIE3","PPCOR","SCODE","PIDC"),each = reptime * 3),
+                                                     c(as.vector(repres_VMPLN_pendiag_BIC_VICL[,c(1,4,7)+1]),
+                                                       as.vector(repres_VPLN_pendiag_BIC[,c(1,4,7)+1]),
+                                                       as.vector(repres_LPGM_ori[,c(1,4,7)+1]),
+                                                       as.vector(repres_Glasso_pendiag_BIC[,c(1,4,7)+1]),
+                                                       as.vector(repres_GENIE3_ori[,c(1,4,7)+1]),
+                                                       as.vector(repres_ppcor_pearson_ori[,c(1,4,7)+1]),
+                                                       as.vector(repres_SCODE_ori[,c(1,4,7)+1]),
+                                                       as.vector(repres_PIDC_ori[,c(1,4,7)+1])),
+                                                     rep("original",reptime * 3 * num_method)))
+            
+
+            EPR_plotdata<-rbind(EPR_plotdata,cbind(rep(graph_vec[graph_index],reptime * 3 * num_method),
+                                                   rep(ifelse(dropout_index == 1,"Low dropout",ifelse(dropout_index == 2,"Medium dropout","High dropout")),reptime * 3 * num_method),
+                                                   rep(dim_use_vec[dim_index],reptime * 3 * num_method),
+                                                   rep(ARI_vec[ARI_index],reptime * 3 * num_method),
+                                                   rep(rep(c("Mean","Min","MMC"),each = reptime),num_method),
+                                                   rep(c("VMPLN","VPLN","LPGM","Glasso","GENIE3","PPCOR","SCODE","PIDC"),each = reptime * 3),
+                                                   c(as.vector(repres_VMPLN_pendiag_density[,c(1,4,7)+1]),
+                                                     as.vector(repres_VPLN_pendiag_density[,c(1,4,7)+1]),
+                                                     as.vector(repres_LPGM_density[,c(1,4,7)+1]),
+                                                     as.vector(repres_Glasso_pendiag_density[,c(1,4,7)+1]),
+                                                     as.vector(repres_GENIE3_density[,c(1,4,7)+1]),
+                                                     as.vector(repres_ppcor_pearson_density[,c(1,4,7)+1]),
+                                                     as.vector(repres_SCODE_density[,c(1,4,7)+1]),
+                                                     as.vector(repres_PIDC_density[,c(1,4,7)+1])),
+                                                   rep("density1",reptime * 3 * num_method)))
+            
+            EPR_plotdata<-rbind(EPR_plotdata,cbind(rep(graph_vec[graph_index],reptime * 3 * num_method),
+                                                   rep(ifelse(dropout_index == 1,"Low dropout",ifelse(dropout_index == 2,"Medium dropout","High dropout")),reptime * 3 * num_method),
+                                                   rep(dim_use_vec[dim_index],reptime * 3 * num_method),
+                                                   rep(ARI_vec[ARI_index],reptime * 3 * num_method),
+                                                   rep(rep(c("Mean","Min","MMC"),each = reptime),num_method),
+                                                   rep(c("VMPLN","VPLN","LPGM","Glasso","GENIE3","PPCOR","SCODE","PIDC"),each = reptime * 3),
+                                                   c(as.vector(repres_VMPLN_pendiag_density2[,c(1,4,7)+1]),
+                                                     as.vector(repres_VPLN_pendiag_density2[,c(1,4,7)+1]),
+                                                     as.vector(repres_LPGM_density2[,c(1,4,7)+1]),
+                                                     as.vector(repres_Glasso_pendiag_density2[,c(1,4,7)+1]),
+                                                     as.vector(repres_GENIE3_density2[,c(1,4,7)+1]),
+                                                     as.vector(repres_ppcor_pearson_density2[,c(1,4,7)+1]),
+                                                     as.vector(repres_SCODE_density2[,c(1,4,7)+1]),
+                                                     as.vector(repres_PIDC_density2[,c(1,4,7)+1])),
+                                                   rep("density2",reptime * 3 * num_method)))
+            
+            
+            ##
+            ##ETPR
+            ETPR_plotdata<-rbind(ETPR_plotdata,cbind(rep(graph_vec[graph_index],reptime * 3 * num_method),
+                                                     rep(ifelse(dropout_index == 1,"Low dropout",ifelse(dropout_index == 2,"Medium dropout","High dropout")),reptime * 3 * num_method),
+                                                   rep(dim_use_vec[dim_index],reptime * 3 * num_method),
+                                                   rep(ARI_vec[ARI_index],reptime * 3 * num_method),
+                                                   rep(rep(c("Mean","Min","MMC"),each = reptime),num_method),
+                                                   rep(c("VMPLN","VPLN","LPGM","Glasso","GENIE3","PPCOR","SCODE","PIDC"),each = reptime * 3),
+                                                   c(as.vector(repres_VMPLN_pendiag_BIC_VICL[,c(1,4,7)+2]),
+                                                     as.vector(repres_VPLN_pendiag_BIC[,c(1,4,7)+2]),
+                                                     as.vector(repres_LPGM_ori[,c(1,4,7)+2]),
+                                                     as.vector(repres_Glasso_pendiag_BIC[,c(1,4,7)+2]),
+                                                     as.vector(repres_GENIE3_ori[,c(1,4,7)+2]),
+                                                     as.vector(repres_ppcor_pearson_ori[,c(1,4,7)+2]),
+                                                     as.vector(repres_SCODE_ori[,c(1,4,7)+2]),
+                                                     as.vector(repres_PIDC_ori[,c(1,4,7)+2])),
+                                                   rep("original",reptime * 3 * num_method)))
+            
+            
+            ETPR_plotdata<-rbind(ETPR_plotdata,cbind(rep(graph_vec[graph_index],reptime * 3 * num_method),
+                                                     rep(ifelse(dropout_index == 1,"Low dropout",ifelse(dropout_index == 2,"Medium dropout","High dropout")),reptime * 3 * num_method),
+                                                   rep(dim_use_vec[dim_index],reptime * 3 * num_method),
+                                                   rep(ARI_vec[ARI_index],reptime * 3 * num_method),
+                                                   rep(rep(c("Mean","Min","MMC"),each = reptime),num_method),
+                                                   rep(c("VMPLN","VPLN","LPGM","Glasso","GENIE3","PPCOR","SCODE","PIDC"),each = reptime * 3),
+                                                   c(as.vector(repres_VMPLN_pendiag_density[,c(1,4,7)+2]),
+                                                     as.vector(repres_VPLN_pendiag_density[,c(1,4,7)+2]),
+                                                     as.vector(repres_LPGM_density[,c(1,4,7)+2]),
+                                                     as.vector(repres_Glasso_pendiag_density[,c(1,4,7)+2]),
+                                                     as.vector(repres_GENIE3_density[,c(1,4,7)+2]),
+                                                     as.vector(repres_ppcor_pearson_density[,c(1,4,7)+2]),
+                                                     as.vector(repres_SCODE_density[,c(1,4,7)+2]),
+                                                     as.vector(repres_PIDC_density[,c(1,4,7)+2])),
+                                                   rep("density1",reptime * 3 * num_method)))
+            
+            ETPR_plotdata<-rbind(ETPR_plotdata,cbind(rep(graph_vec[graph_index],reptime * 3 * num_method),
+                                                     rep(ifelse(dropout_index == 1,"Low dropout",ifelse(dropout_index == 2,"Medium dropout","High dropout")),reptime * 3 * num_method),
+                                                   rep(dim_use_vec[dim_index],reptime * 3 * num_method),
+                                                   rep(ARI_vec[ARI_index],reptime * 3 * num_method),
+                                                   rep(rep(c("Mean","Min","MMC"),each = reptime),num_method),
+                                                   rep(c("VMPLN","VPLN","LPGM","Glasso","GENIE3","PPCOR","SCODE","PIDC"),each = reptime * 3),
+                                                   c(as.vector(repres_VMPLN_pendiag_density2[,c(1,4,7)+2]),
+                                                     as.vector(repres_VPLN_pendiag_density2[,c(1,4,7)+2]),
+                                                     as.vector(repres_LPGM_density2[,c(1,4,7)+2]),
+                                                     as.vector(repres_Glasso_pendiag_density2[,c(1,4,7)+2]),
+                                                     as.vector(repres_GENIE3_density2[,c(1,4,7)+2]),
+                                                     as.vector(repres_ppcor_pearson_density2[,c(1,4,7)+2]),
+                                                     as.vector(repres_SCODE_density2[,c(1,4,7)+2]),
+                                                     as.vector(repres_PIDC_density2[,c(1,4,7)+2])),
+                                                   rep("density2",reptime * 3 * num_method)))
+            
+            # # ##########################
+            # ##signed
+            # ##AUPR
+            # AUPR_plotdata_signed<-rbind(AUPR_plotdata_signed,cbind(rep(graph_vec[graph_index],reptime * 3 * num_method),
+            #                                                        rep(ifelse(dropout_index == 1,"Low dropout",ifelse(dropout_index == 2,"Medium dropout","High dropout")),reptime * 3 * num_method),
+            #                                          rep(dim_use_vec[dim_index],reptime * 3 * num_method),
+            #                                          rep(ARI_vec[ARI_index],reptime * 3 * num_method),
+            #                                          rep(rep(c("Mean","Min","MMC"),each = reptime),num_method),
+            #                                          rep(c("VMPLN","VPLN","LPGM","Glasso","GENIE3","PPCOR","SCODE","PIDC"),each = reptime * 3),
+            #                                          c(as.vector(repres_VMPLN_pendiag_BIC_VICL_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_VPLN_pendiag_BIC_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_LPGM_ori_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_Glasso_pendiag_BIC_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_GENIE3_ori_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_ppcor_pearson_ori_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_SCODE_ori_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_PIDC_ori_signed[,c(1,4,7)])),
+            #                                          rep("original",reptime * 3 * num_method)))
+            # 
+            # AUPR_plotdata_signed<-rbind(AUPR_plotdata_signed,cbind(rep(graph_vec[graph_index],reptime * 3 * num_method),
+            #                                                        rep(ifelse(dropout_index == 1,"Low dropout",ifelse(dropout_index == 2,"Medium dropout","High dropout")),reptime * 3 * num_method),
+            #                                          rep(dim_use_vec[dim_index],reptime * 3 * num_method),
+            #                                          rep(ARI_vec[ARI_index],reptime * 3 * num_method),
+            #                                          rep(rep(c("Mean","Min","MMC"),each = reptime),num_method),
+            #                                          rep(c("VMPLN","VPLN","LPGM","Glasso","GENIE3","PPCOR","SCODE","PIDC"),each = reptime * 3),
+            #                                          c(as.vector(repres_VMPLN_pendiag_density_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_VPLN_pendiag_density_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_LPGM_density_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_Glasso_pendiag_density_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_GENIE3_density_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_ppcor_pearson_density_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_SCODE_density_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_PIDC_density_signed[,c(1,4,7)])),
+            #                                          rep("density1",reptime * 3 * num_method)))
+            # 
+            # AUPR_plotdata_signed<-rbind(AUPR_plotdata_signed,cbind(rep(graph_vec[graph_index],reptime * 3 * num_method),
+            #                                                        rep(ifelse(dropout_index == 1,"Low dropout",ifelse(dropout_index == 2,"Medium dropout","High dropout")),reptime * 3 * num_method),
+            #                                          rep(dim_use_vec[dim_index],reptime * 3 * num_method),
+            #                                          rep(ARI_vec[ARI_index],reptime * 3 * num_method),
+            #                                          rep(rep(c("Mean","Min","MMC"),each = reptime),num_method),
+            #                                          rep(c("VMPLN","VPLN","LPGM","Glasso","GENIE3","PPCOR","SCODE","PIDC"),each = reptime * 3),
+            #                                          c(as.vector(repres_VMPLN_pendiag_density2_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_VPLN_pendiag_density2_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_LPGM_density2_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_Glasso_pendiag_density2_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_GENIE3_density2_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_ppcor_pearson_density2_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_SCODE_density2_signed[,c(1,4,7)]),
+            #                                            as.vector(repres_PIDC_density2_signed[,c(1,4,7)])),
+            #                                          rep("density2",reptime * 3 * num_method)))
+          }
+          
+        }
+      }
+    }
+  }
+}
+AUPR_plotdata<-AUPR_plotdata[which(!is.na(as.numeric(AUPR_plotdata[,7]))),]
+AUPR_plotdata<-AUPR_plotdata[which(AUPR_plotdata[,5] != "Min"),]
+AUPR_plotdata<-as.data.frame(AUPR_plotdata)
+##
+names(AUPR_plotdata)<-c("graph","dropout","dim","ARI","Type","Method","AUPR","Type1")
+
+##
+AUPR_plotdata$dropout[which(AUPR_plotdata$dropout == "Medium dropout")]<-"High dropout"
+
+AUPR_plotdata$graph<-factor(ifelse(AUPR_plotdata$graph == graph_vec[1],"ER-graph",ifelse(AUPR_plotdata$graph == graph_vec[2],"HUB-graph",ifelse(AUPR_plotdata$graph == graph_vec[3],"AFF-graph","PA-graph"))),levels = c("ER-graph","HUB-graph","AFF-graph","PA-graph"))
+AUPR_plotdata$dropout<-factor(AUPR_plotdata$dropout,levels = c("Low dropout","High dropout"))
+##
+AUPR_plotdata$dim<-ifelse(AUPR_plotdata$dim == "100", "p = 100","p = 300")
+##
+AUPR_plotdata$dim<-factor(AUPR_plotdata$dim,levels = c("p = 100","p = 300"))
+AUPR_plotdata$ARI<-factor(AUPR_plotdata$ARI,levels = c(1:3))
+AUPR_plotdata$Type<-factor(AUPR_plotdata$Type,levels = c("Mean","MMC"))
+AUPR_plotdata$Method<-factor(AUPR_plotdata$Method,levels = c("VMPLN","VPLN","LPGM","Glasso","PPCOR","GENIE3","PIDC","SCODE"))
+AUPR_plotdata$AUPR<-as.numeric(AUPR_plotdata$AUPR)
+AUPR_plotdata$Type1<-factor(AUPR_plotdata$Type1,levels = c("original","density1","density2"))
+AUPR_plotdata$dropout_dim<-paste(AUPR_plotdata$dropout,"_",AUPR_plotdata$dim,sep = "")
+AUPR_plotdata$dropout_dim<-factor(AUPR_plotdata$dropout_dim,levels = c("Low dropout_p = 100","High dropout_p = 100",
+                                                                       "Low dropout_p = 300","High dropout_p = 300",
+                                                                       "Low dropout_p = 500","High dropout_p = 500"))
+AUPR_plotdata$dropout_dim_col<-c("red","blue","orange","yellow")[as.numeric(AUPR_plotdata$dropout_dim)]
+
+#####
+# AUPR_plotdata_signed<-AUPR_plotdata_signed[which(!is.na(as.numeric(AUPR_plotdata_signed[,7]))),]
+# AUPR_plotdata_signed<-AUPR_plotdata_signed[which(AUPR_plotdata_signed[,5] != "Min"),]
+# AUPR_plotdata_signed<-as.data.frame(AUPR_plotdata_signed)
+# 
+# names(AUPR_plotdata_signed)<-c("graph","dropout","dim","ARI","Type","Method","AUPR","Type1")
+# 
+# AUPR_plotdata_signed$dropout[which(AUPR_plotdata_signed$dropout == "medium")]<-"high"
+# 
+# AUPR_plotdata_signed$graph<-factor(ifelse(AUPR_plotdata_signed$graph == graph_vec[1],"ER-graph","HUB-graph"),levels = c("ER-graph","HUB-graph"))
+# AUPR_plotdata_signed$dropout<-factor(AUPR_plotdata_signed$dropout,levels = c("low","high"))
+# AUPR_plotdata_signed$dim<-factor(AUPR_plotdata_signed$dim,levels = c(dim_use_vec))
+# AUPR_plotdata_signed$ARI<-factor(AUPR_plotdata_signed$ARI,levels = c(1:3))
+# AUPR_plotdata_signed$Type<-factor(AUPR_plotdata_signed$Type,levels = c("Mean","MMC"))
+# AUPR_plotdata_signed$Method<-factor(AUPR_plotdata_signed$Method,levels = c("VMPLN","VPLN","Glasso","PPCOR","GENIE3","PIDC","SCODE"))
+# AUPR_plotdata_signed$AUPR<-as.numeric(AUPR_plotdata_signed$AUPR)
+# AUPR_plotdata_signed$Type1<-factor(AUPR_plotdata_signed$Type1,levels = c("original","density1","density2"))
+# AUPR_plotdata_signed$dropout_dim<-paste(AUPR_plotdata_signed$dropout,"_",AUPR_plotdata_signed$dim,sep = "")
+# AUPR_plotdata_signed$dropout_dim<-factor(AUPR_plotdata_signed$dropout_dim,levels = c("low_100","high_100",
+#                                                                        "low_300","high_300",
+#                                                                        "low_500","high_500"))
+# AUPR_plotdata_signed$dropout_dim_col<-c("red","blue","orange","yellow")[as.numeric(AUPR_plotdata_signed$dropout_dim)]
+
+##############
+EPR_plotdata<-EPR_plotdata[which(!is.na(as.numeric(EPR_plotdata[,7]))),]
+EPR_plotdata<-EPR_plotdata[which(EPR_plotdata[,5] != "Min"),]
+EPR_plotdata<-as.data.frame(EPR_plotdata)
+names(EPR_plotdata)<-c("graph","dropout","dim","ARI","Type","Method","EPR","Type1")
+EPR_plotdata$dropout[which(EPR_plotdata$dropout == "Medium dropout")]<-"High dropout"
+
+EPR_plotdata$graph<-factor(ifelse(EPR_plotdata$graph == graph_vec[1],"ER-graph",ifelse(EPR_plotdata$graph == graph_vec[2],"HUB-graph",ifelse(EPR_plotdata$graph == graph_vec[3],"AFF-graph","PA-graph"))),levels = c("ER-graph","HUB-graph","AFF-graph","PA-graph"))
+EPR_plotdata$dropout<-factor(EPR_plotdata$dropout,levels = c("Low dropout","High dropout"))
+##
+EPR_plotdata$dim<-ifelse(EPR_plotdata$dim == "100", "p = 100","p = 300")
+EPR_plotdata$dim<-factor(EPR_plotdata$dim,levels = c("p = 100","p = 300"))
+EPR_plotdata$ARI<-factor(EPR_plotdata$ARI,levels = c(1:3))
+EPR_plotdata$Type<-factor(EPR_plotdata$Type,levels = c("Mean","MMC"))
+EPR_plotdata$Method<-factor(EPR_plotdata$Method,levels = c("VMPLN","VPLN","LPGM","Glasso","PPCOR","GENIE3","PIDC","SCODE"))
+EPR_plotdata$EPR<-as.numeric(EPR_plotdata$EPR)
+EPR_plotdata$Type1<-factor(EPR_plotdata$Type1,levels = c("original","density1","density2"))
+EPR_plotdata$dropout_dim<-paste(EPR_plotdata$dropout,"_",EPR_plotdata$dim,sep = "")
+EPR_plotdata$dropout_dim<-factor(EPR_plotdata$dropout_dim,levels = c("Low dropout_p = 100","High dropout_p = 100",
+                                                                     "Low dropout_p = 300","High dropout_p = 300",
+                                                                     "Low dropout_p = 500","High dropout_p = 500"))
+EPR_plotdata$dropout_dim_col<-c("red","blue","orange","yellow")[as.numeric(EPR_plotdata$dropout_dim)]
+
+###############
+##############
+ETPR_plotdata<-ETPR_plotdata[which(!is.na(as.numeric(ETPR_plotdata[,7]))),]
+ETPR_plotdata<-ETPR_plotdata[which(ETPR_plotdata[,5] != "Min"),]
+ETPR_plotdata<-as.data.frame(ETPR_plotdata)
+names(ETPR_plotdata)<-c("graph","dropout","dim","ARI","Type","Method","ETPR","Type1")
+ETPR_plotdata$dropout[which(ETPR_plotdata$dropout == "Medium dropout")]<-"High dropout"
+
+ETPR_plotdata$graph<-factor(ifelse(ETPR_plotdata$graph == graph_vec[1],"ER-graph",ifelse(ETPR_plotdata$graph == graph_vec[2],"HUB-graph",ifelse(ETPR_plotdata$graph == graph_vec[3],"AFF-graph","PA-graph"))),levels = c("ER-graph","HUB-graph","AFF-graph","PA-graph"))
+ETPR_plotdata$dropout<-factor(ETPR_plotdata$dropout,levels = c("Low dropout","High dropout"))
+##
+ETPR_plotdata$dim<-ifelse(ETPR_plotdata$dim == "100", "p = 100","p = 300")
+ETPR_plotdata$dim<-factor(ETPR_plotdata$dim,levels = c("p = 100","p = 300"))
+ETPR_plotdata$ARI<-factor(ETPR_plotdata$ARI,levels = c(1:3))
+ETPR_plotdata$Type<-factor(ETPR_plotdata$Type,levels = c("Mean","MMC"))
+ETPR_plotdata$Method<-factor(ETPR_plotdata$Method,levels = c("VMPLN","VPLN","LPGM","Glasso","PPCOR","GENIE3","PIDC","SCODE"))
+ETPR_plotdata$ETPR<-as.numeric(ETPR_plotdata$ETPR)
+ETPR_plotdata$Type1<-factor(ETPR_plotdata$Type1,levels = c("original","density1","density2"))
+ETPR_plotdata$dropout_dim<-paste(ETPR_plotdata$dropout,"_",ETPR_plotdata$dim,sep = "")
+ETPR_plotdata$dropout_dim<-factor(ETPR_plotdata$dropout_dim,levels = c("Low dropout_p = 100","High dropout_p = 100",
+                                                                       "Low dropout_p = 300","High dropout_p = 300",
+                                                                       "Low dropout_p = 500","High dropout_p = 500"))
+ETPR_plotdata$dropout_dim_col<-c("red","blue","orange","yellow")[as.numeric(ETPR_plotdata$dropout_dim)]
+
+# mycolor<-c("#D73028","#4774B5","#35978F","#E37731","orange","yellow","black")
+mycolor<-brewer.pal(9,"Set1")[-c(6)]
+
+
+
+# ggplot(data = AUPR_plotdata,aes(x = ARI, y = AUPR,fill = fill,color = col))+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+#   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = 0,ymax = 1,alpha = 0.2,fill = brewer.pal(9,"YlGn")[4])+
+#   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = 0,ymax = 1,alpha = 0.4,fill = brewer.pal(9,"YlGn")[4])+
+#   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = 0,ymax = 1,alpha = 0.6,fill = brewer.pal(9,"YlGn")[4])+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,outlier.colour = NA)+facet_grid(graph~dropout_dim)+
+#   theme_bw()+
+#   scale_fill_manual(values = c("grey",brewer.pal(12,"Paired")[c(2,10,12,1)]))+
+#     scale_color_manual(values = c("black",brewer.pal(12,"Paired")[c(2,10,12,1)]))
+# +
+#   scale_color_manual(values = c(brewer.pal(12,"Paired")[c(2,10,12,1)]))
+# AUPR_plotdata<-AUPR_plotdata[AUPR_plotdata$Method!="VMPLN_eta2",]
+##
+# AUPR_plotdata<-AUPR_plotdata[which(AUPR_plotdata$Type != "Min"),]
+# AUPR_plotdata<-AUPR_plotdata[which(AUPR_plotdata$dropout != "high"),]
+##
+for(graph_index in 1:4){
+  # ggplot(data = AUPR_plotdata[which((AUPR_plotdata$Type1 == "original") & (AUPR_plotdata$graph == c("ER-graph","HUB-graph","AFF-graph","PA-graph")[graph_index])),],aes(x = ARI, y = AUPR,fill = Method,alpha = Type,color = Method))+
+  #   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+  #   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+  #   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+  #   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+  #   geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+  #   theme_bw()+
+  #   scale_fill_manual(values = mycolor)+
+  #   scale_color_manual(values = mycolor)+
+  #   scale_alpha_manual(values = c(1,0.3))+
+  #   theme(panel.grid.major = element_blank(),
+  #         strip.text = element_text(face = "bold",size = rel(2)),
+  #         strip.background = element_rect(fill = "white"),
+  #         axis.title = element_text(size = rel(2),face = "bold"),
+  #         axis.text = element_text(size = rel(2),face = "bold"),
+  #         legend.text = element_text(family = "serif",
+  #                                    size = rel(2)),
+  #         legend.title = element_text(family = "serif",
+  #                                     size = rel(2)))+
+  #   facet_grid(dropout~dim,scales = "free_y")+
+  #   xlab("Mixing degree")+
+  #   ylab("AUPRC ratio") 
+  ##only mean
+  ggplot(data = AUPR_plotdata[which((AUPR_plotdata$Type1 == "original") & (AUPR_plotdata$graph == c("ER-graph","HUB-graph","AFF-graph","PA-graph")[graph_index]) & (AUPR_plotdata$Type == "Mean") & (AUPR_plotdata$Method != "SCODE")),],
+         aes(x = ARI, y = AUPR,fill = Method,color = Method))+
+    geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+    annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+    annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+    annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+    geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+    theme_bw()+
+    scale_x_discrete(breaks = c(1,2,3),labels = c("Low mixing degree","Medium mixing degree","High mixing degree"))+
+    scale_fill_manual(values = mycolor)+
+    scale_color_manual(values = mycolor)+
+    theme(panel.grid.major = element_blank(),
+          strip.text = element_text(face = "bold",size = rel(2)),
+          strip.background = element_rect(fill = "white"),
+          axis.title = element_text(size = rel(2),face = "bold"),
+          axis.text = element_text(size = rel(2),face = "bold"),
+          legend.text = element_text(family = "serif",
+                                     size = rel(2)),
+          legend.title = element_text(family = "serif",
+                                      size = rel(2)))+
+    facet_grid(dropout~dim,scales = "free_y")+
+    # xlab("Mixing degree")+
+    xlab(NULL)+
+    ylab("AUPRC ratio") 
+  
+  if(gener == "MPLN"){
+    ggsave(paste("D:/Project/Pro_VMPLN/code/simulation_res/version6/MPLN_generator/ori/AUPRC_ratio_ori_graph",graph_index,"_MPLN.png",sep = ""),width = 20,height = 10,scale = 1.3,dpi = 300,bg = "transparent")
+  }else{
+    ggsave(paste("D:/Project/Pro_VMPLN/code/simulation_res/version6/Compositional_generator/ori/AUPRC_ratio_ori_graph",graph_index,"_Compositional.png",sep = ""),width = 20,height = 10,scale = 1.3,dpi = 300,bg = "transparent")
+  }
+  
+  # ggsave(paste("D:/Project/Pro_VMPLN/code/simulation_res/version6/Compositional_generator/ori/AUPRC_ratio_ori_graph",graph_index,".png",sep = ""),width = 20,height = 10,scale = 1.3,dpi = 300,bg = "transparent")
+}
+
+# ggplot(data = AUPR_plotdata_signed[which(AUPR_plotdata_signed$Type1 == "original"),],aes(x = ARI, y = AUPR,fill = Method,alpha = Type,color = Method))+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+#   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+#   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+#   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+#   geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+#   theme_bw()+
+#   scale_fill_manual(values = mycolor[-c(4,7)])+
+#   scale_color_manual(values = mycolor[-c(4,7)])+
+#   scale_alpha_manual(values = c(1,0.3))+
+#   theme(panel.grid.major = element_blank(),
+#         strip.text = element_text(face = "bold",size = rel(1)),
+#         strip.background = element_rect(fill = "white"),
+#         axis.title = element_text(size = rel(1.2),face = "bold"),
+#         axis.text = element_text(size = rel(1.1),face = "bold"))+
+#   facet_grid(dropout_dim~graph,scales = "free_y")+
+#   xlab("Mixing degree")
+
+
+# ggplot(data = AUPR_plotdata[which(AUPR_plotdata$Type1 == "density1"),],aes(x = ARI, y = AUPR,fill = Method,alpha = Type,color = Method))+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+#   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+#   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+#   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+#   geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+#   theme_bw()+
+#   scale_fill_manual(values = mycolor)+
+#   scale_color_manual(values = mycolor)+
+#   scale_alpha_manual(values = c(1,0.3))+
+#   theme(panel.grid.major = element_blank(),
+#         strip.text = element_text(face = "bold",size = rel(1.5)),
+#         strip.background = element_rect(fill = "white"),
+#         axis.title = element_text(size = rel(1.5),face = "bold"),
+#         axis.text = element_text(size = rel(1.3),face = "bold"),
+#         legend.text = element_text(family = "serif",
+#                                    size = rel(1.5)),
+#         legend.title = element_text(family = "serif",
+#                                     size = rel(1.5)))+
+#   facet_grid(dropout_dim~graph,scales = "free_y")+
+#   xlab("Mixing degree")+
+#   ylab("AUPRR")
+
+# ggplot(data = AUPR_plotdata_signed[which(AUPR_plotdata_signed$Type1 == "density1"),],aes(x = ARI, y = AUPR,fill = Method,alpha = Type,color = Method))+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+#   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+#   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+#   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+#   geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+#   theme_bw()+
+#   scale_fill_manual(values = mycolor[-c(4,7)])+
+#   scale_color_manual(values = mycolor[-c(4,7)])+
+#   scale_alpha_manual(values = c(1,0.3))+
+#   theme(panel.grid.major = element_blank(),
+#         strip.text = element_text(face = "bold",size = rel(1)),
+#         strip.background = element_rect(fill = "white"),
+#         axis.title = element_text(size = rel(1.2),face = "bold"),
+#         axis.text = element_text(size = rel(1.1),face = "bold"))+
+#   facet_grid(dropout_dim~graph,scales = "free_y")+
+#   xlab("Mixing degree")+
+#   ylab("AUPRR")
+
+for(graph_index in 1:4){
+# ggplot(data = AUPR_plotdata[which((AUPR_plotdata$Type1 == "density2") & (AUPR_plotdata$graph == c("ER-graph","HUB-graph","AFF-graph","PA-graph")[graph_index])),],aes(x = ARI, y = AUPR,fill = Method,alpha = Type,color = Method))+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+#   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+#   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+#   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+#   geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+#   theme_bw()+
+#   scale_fill_manual(values = mycolor)+
+#   scale_color_manual(values = mycolor)+
+#   scale_alpha_manual(values = c(1,0.3))+
+#   theme(panel.grid.major = element_blank(),
+#         strip.text = element_text(face = "bold",size = rel(2)),
+#         strip.background = element_rect(fill = "white"),
+#         axis.title = element_text(size = rel(2),face = "bold"),
+#         axis.text = element_text(size = rel(2),face = "bold"),
+#         legend.text = element_text(family = "serif",
+#                                    size = rel(2)),
+#         legend.title = element_text(family = "serif",
+#                                     size = rel(2)))+
+#   facet_grid(dropout~dim,scales = "free_y")+
+#   xlab("Mixing degree")+
+#   ylab("AUPRC ratio")
+  ##
+  ggplot(data = AUPR_plotdata[which((AUPR_plotdata$Type1 == "density2") & (AUPR_plotdata$graph == c("ER-graph","HUB-graph","AFF-graph","PA-graph")[graph_index]) & (AUPR_plotdata$Type == "Mean") & (AUPR_plotdata$Method !="SCODE")),],
+         aes(x = ARI, y = AUPR,fill = Method,color = Method))+
+    geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+    annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+    annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+    annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+    geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+    theme_bw()+
+    scale_x_discrete(breaks = c(1,2,3),labels = c("Low mixing degree","Medium mixing degree","High mixing degree"))+
+    scale_fill_manual(values = mycolor)+
+    scale_color_manual(values = mycolor)+
+    theme(panel.grid.major = element_blank(),
+          strip.text = element_text(face = "bold",size = rel(2)),
+          strip.background = element_rect(fill = "white"),
+          axis.title = element_text(size = rel(2),face = "bold"),
+          axis.text = element_text(size = rel(2),face = "bold"),
+          legend.text = element_text(family = "serif",
+                                     size = rel(2)),
+          legend.title = element_text(family = "serif",
+                                      size = rel(2)))+
+    facet_grid(dropout~dim,scales = "free_y")+
+    # xlab("Mixing degree")+
+    xlab(NULL)+
+    ylab("AUPRC ratio")
+  
+  ##
+  if(gener == "MPLN"){
+    ggsave(paste("D:/Project/Pro_VMPLN/code/simulation_res/version6/MPLN_generator/densy/AUPRC_ratio_densy_graph",graph_index,"_MPLN.png",sep = ""),width = 20,height = 10,scale = 1.3,dpi = 300,bg = "transparent")
+  }else{
+    ggsave(paste("D:/Project/Pro_VMPLN/code/simulation_res/version6/Compositional_generator/densy/AUPRC_ratio_densy_graph",graph_index,"_Compositional.png",sep = ""),width = 20,height = 10,scale = 1.3,dpi = 300,bg = "transparent")
+  }
+  
+}
+# ggplot(data = AUPR_plotdata_signed[which(AUPR_plotdata_signed$Type1 == "density2"),],aes(x = ARI, y = AUPR,fill = Method,alpha = Type,color = Method))+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+#   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+#   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+#   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+#   geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+#   theme_bw()+
+#   scale_fill_manual(values = mycolor[-c(4,7)])+
+#   scale_color_manual(values = mycolor[-c(4,7)])+
+#   scale_alpha_manual(values = c(1,0.3))+
+#   theme(panel.grid.major = element_blank(),
+#         strip.text = element_text(face = "bold",size = rel(1)),
+#         strip.background = element_rect(fill = "white"),
+#         axis.title = element_text(size = rel(1.2),face = "bold"),
+#         axis.text = element_text(size = rel(1.1),face = "bold"))+
+#   facet_grid(dropout_dim~graph,scales = "free_y")+
+#   xlab("Mixing degree")+
+#   ylab("AUPRR")
+
+
+##EPR
+EPR_plotdata$EPR<-EPR_plotdata$EPR * 10
+for(graph_index in 1:4){
+# ggplot(data = EPR_plotdata[which((EPR_plotdata$Type1 == "original") & (EPR_plotdata$graph == c("ER-graph","HUB-graph","AFF-graph","PA-graph")[graph_index])),],aes(x = ARI, y = EPR,fill = Method,alpha = Type,color = Method))+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+#   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+#   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+#   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+#   geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+#   theme_bw()+
+#   scale_fill_manual(values = mycolor)+
+#   scale_color_manual(values = mycolor)+
+#   scale_alpha_manual(values = c(1,0.3))+
+#   theme(panel.grid.major = element_blank(),
+#         strip.text = element_text(face = "bold",size = rel(2)),
+#         strip.background = element_rect(fill = "white"),
+#         axis.title = element_text(size = rel(2),face = "bold"),
+#         axis.text = element_text(size = rel(2),face = "bold"),
+#         legend.text = element_text(family = "serif",
+#                                    size = rel(2)),
+#         legend.title = element_text(family = "serif",
+#                                     size = rel(2)))+
+#   facet_grid(dropout~dim,scales = "free_y")+
+#   xlab("Mixing degree")+
+#   ylab("Early precision ratio")
+  ##
+  ggplot(data = EPR_plotdata[which((EPR_plotdata$Type1 == "original") & (EPR_plotdata$graph == c("ER-graph","HUB-graph","AFF-graph","PA-graph")[graph_index]) & (EPR_plotdata$Type == "Mean") & (EPR_plotdata$Method != "SCODE")),],
+         aes(x = ARI, y = EPR,fill = Method,color = Method))+
+    geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+    annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+    annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+    annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+    geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+    theme_bw()+
+    scale_x_discrete(breaks = c(1,2,3),labels = c("Low mixing degree","Medium mixing degree","High mixing degree"))+
+    scale_fill_manual(values = mycolor)+
+    scale_color_manual(values = mycolor)+
+    theme(panel.grid.major = element_blank(),
+          strip.text = element_text(face = "bold",size = rel(2)),
+          strip.background = element_rect(fill = "white"),
+          axis.title = element_text(size = rel(2),face = "bold"),
+          axis.text = element_text(size = rel(2),face = "bold"),
+          legend.text = element_text(family = "serif",
+                                     size = rel(2)),
+          legend.title = element_text(family = "serif",
+                                      size = rel(2)))+
+    facet_grid(dropout~dim,scales = "free_y")+
+    # xlab("Mixing degree")+
+    xlab(NULL)+
+    ylab("Early precision ratio")
+  ##
+  if(gener == "MPLN"){
+    ggsave(paste("D:/Project/Pro_VMPLN/code/simulation_res/version6/MPLN_generator/ori/EPR_ratio_ori_graph",graph_index,"_MPLN.png",sep = ""),width = 20,height = 10,scale = 1.3,dpi = 300,bg = "transparent")
+  }else{
+    ggsave(paste("D:/Project/Pro_VMPLN/code/simulation_res/version6/Compositional_generator/ori/EPR_ratio_ori_graph",graph_index,"_Compositional.png",sep = ""),width = 20,height = 10,scale = 1.3,dpi = 300,bg = "transparent") 
+  }
+
+}
+
+# ggplot(data = EPR_plotdata[which(EPR_plotdata$Type1 == "density1"),],aes(x = ARI, y = EPR,fill = Method,alpha = Type,color = Method))+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+#   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+#   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+#   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+#   geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+#   theme_bw()+
+#   scale_fill_manual(values = mycolor)+
+#   scale_color_manual(values = mycolor)+
+#   scale_alpha_manual(values = c(1,0.3))+
+#   theme(panel.grid.major = element_blank(),
+#         strip.text = element_text(face = "bold",size = rel(1.5)),
+#         strip.background = element_rect(fill = "white"),
+#         axis.title = element_text(size = rel(1.5),face = "bold"),
+#         axis.text = element_text(size = rel(1.3),face = "bold"),
+#         legend.text = element_text(family = "serif",
+#                                    size = rel(1.5)),
+#         legend.title = element_text(family = "serif",
+#                                     size = rel(1.5)))+
+#   facet_grid(dropout_dim~graph,scales = "free_y")+
+#   xlab("Mixing degree")+
+#   ylab("EPRR")
+
+for(graph_index in 1:4){
+# ggplot(data = EPR_plotdata[which((EPR_plotdata$Type1 == "density2") & (EPR_plotdata$graph == c("ER-graph","HUB-graph","AFF-graph","PA-graph")[graph_index])),],aes(x = ARI, y = EPR,fill = Method,alpha = Type,color = Method))+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+#   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+#   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+#   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+#   geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+#   theme_bw()+
+#   scale_fill_manual(values = mycolor)+
+#   scale_color_manual(values = mycolor)+
+#   scale_alpha_manual(values = c(1,0.3))+
+#   theme(panel.grid.major = element_blank(),
+#         strip.text = element_text(face = "bold",size = rel(2)),
+#         strip.background = element_rect(fill = "white"),
+#         axis.title = element_text(size = rel(2),face = "bold"),
+#         axis.text = element_text(size = rel(2),face = "bold"),
+#         legend.text = element_text(family = "serif",
+#                                    size = rel(2)),
+#         legend.title = element_text(family = "serif",
+#                                     size = rel(2)))+
+#   facet_grid(dropout~dim,scales = "free_y")+
+#   xlab("Mixing degree")+
+#   ylab("Early precision ratio")
+  ##
+  ggplot(data = EPR_plotdata[which((EPR_plotdata$Type1 == "density2") & (EPR_plotdata$graph == c("ER-graph","HUB-graph","AFF-graph","PA-graph")[graph_index]) & (EPR_plotdata$Type == "Mean") & (EPR_plotdata$Method != "SCODE")),],aes(x = ARI, y = EPR,fill = Method,color = Method))+
+    geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+    annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+    annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+    annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+    geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+    theme_bw()+
+    scale_x_discrete(breaks = c(1,2,3),labels = c("Low mixing degree","Medium mixing degree","High mixing degree"))+
+    scale_fill_manual(values = mycolor)+
+    scale_color_manual(values = mycolor)+
+    theme(panel.grid.major = element_blank(),
+          strip.text = element_text(face = "bold",size = rel(2)),
+          strip.background = element_rect(fill = "white"),
+          axis.title = element_text(size = rel(2),face = "bold"),
+          axis.text = element_text(size = rel(2),face = "bold"),
+          legend.text = element_text(family = "serif",
+                                     size = rel(2)),
+          legend.title = element_text(family = "serif",
+                                      size = rel(2)))+
+    facet_grid(dropout~dim,scales = "free_y")+
+    # xlab("Mixing degree")+
+    xlab(NULL)+
+    ylab("Early precision ratio")
+  if(gener == "MPLN"){
+    ggsave(paste("D:/Project/Pro_VMPLN/code/simulation_res/version6/MPLN_generator/densy/EPR_ratio_densy_graph",graph_index,"_MPLN.png",sep = ""),width = 20,height = 10,scale = 1.3,dpi = 300,bg = "transparent")
+  }else{
+    ggsave(paste("D:/Project/Pro_VMPLN/code/simulation_res/version6/Compositional_generator/densy/EPR_ratio_densy_graph",graph_index,"_Compositional.png",sep = ""),width = 20,height = 10,scale = 1.3,dpi = 300,bg = "transparent") 
+  }
+  
+}
+
+##ETPR
+for(graph_index in 1:4){
+# ggplot(data = ETPR_plotdata[which((ETPR_plotdata$Type1 == "original") & (ETPR_plotdata$graph == c("ER-graph","HUB-graph","AFF-graph","PA-graph")[graph_index])),],aes(x = ARI, y = ETPR,fill = Method,alpha = Type,color = Method))+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+#   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+#   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+#   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+#   geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+#   theme_bw()+
+#   scale_fill_manual(values = mycolor)+
+#   scale_color_manual(values = mycolor)+
+#   scale_alpha_manual(values = c(1,0.3))+
+#   theme(panel.grid.major = element_blank(),
+#         strip.text = element_text(face = "bold",size = rel(2)),
+#         strip.background = element_rect(fill = "white"),
+#         axis.title = element_text(size = rel(2),face = "bold"),
+#         axis.text = element_text(size = rel(2),face = "bold"),
+#         legend.text = element_text(family = "serif",
+#                                    size = rel(2)),
+#         legend.title = element_text(family = "serif",
+#                                     size = rel(2)))+
+#   facet_grid(dropout~dim,scales = "free_y")+
+#   xlab("Mixing degree")+
+#   ylab("Early true positive ratio")
+  ##
+  ggplot(data = ETPR_plotdata[which((ETPR_plotdata$Type1 == "original") & (ETPR_plotdata$graph == c("ER-graph","HUB-graph","AFF-graph","PA-graph")[graph_index]) & (ETPR_plotdata$Type == "Mean") & (ETPR_plotdata$Method != "SCODE")),],aes(x = ARI, y = ETPR,fill = Method,color = Method))+
+    geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+    annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+    annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+    annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+    geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+    theme_bw()+
+    scale_x_discrete(breaks = c(1,2,3),labels = c("Low mixing degree","Medium mixing degree","High mixing degree"))+
+    scale_fill_manual(values = mycolor)+
+    scale_color_manual(values = mycolor)+
+    theme(panel.grid.major = element_blank(),
+          strip.text = element_text(face = "bold",size = rel(2)),
+          strip.background = element_rect(fill = "white"),
+          axis.title = element_text(size = rel(2),face = "bold"),
+          axis.text = element_text(size = rel(2),face = "bold"),
+          legend.text = element_text(family = "serif",
+                                     size = rel(2)),
+          legend.title = element_text(family = "serif",
+                                      size = rel(2)))+
+    facet_grid(dropout~dim,scales = "free_y")+
+    # xlab("Mixing degree")+
+    xlab(NULL)+
+    ylab("Early true positive ratio")
+  if(gener == "MPLN"){
+    ggsave(paste("D:/Project/Pro_VMPLN/code/simulation_res/version6/MPLN_generator/ori/ETPR_ratio_ori_graph",graph_index,"_MPLN.png",sep = ""),width = 20,height = 10,scale = 1.3,dpi = 300,bg = "transparent")
+  }else{
+    ggsave(paste("D:/Project/Pro_VMPLN/code/simulation_res/version6/Compositional_generator/ori/ETPR_ratio_ori_graph",graph_index,"_Compositional.png",sep = ""),width = 20,height = 10,scale = 1.3,dpi = 300,bg = "transparent")
+  }
+
+
+}
+
+# ggplot(data = ETPR_plotdata[which(ETPR_plotdata$Type1 == "density1"),],aes(x = ARI, y = ETPR,fill = Method,alpha = Type,color = Method))+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+#   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+#   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+#   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+#   geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+#   theme_bw()+
+#   scale_fill_manual(values = mycolor)+
+#   scale_color_manual(values = mycolor)+
+#   scale_alpha_manual(values = c(1,0.3))+
+#   theme(panel.grid.major = element_blank(),
+#         strip.text = element_text(face = "bold",size = rel(1)),
+#         strip.background = element_rect(fill = "white"),
+#         axis.title = element_text(size = rel(1.2),face = "bold"),
+#         axis.text = element_text(size = rel(1.1),face = "bold"))+
+#   facet_grid(dropout_dim~graph,scales = "free_y")+
+#   xlab("Mixing degree")
+
+
+# ggplot(data = ETPR_plotdata[which(ETPR_plotdata$Type1 == "density2"),],aes(x = ARI, y = ETPR,fill = Method,alpha = Type,color = Method))+
+#   geom_boxplot(position = position_dodge(1),width = 0.7,notch = TRUE,fill = "white",color = "white")+
+#   annotate("rect",xmin = 0.5,xmax = 1.5,ymin = -Inf,ymax = Inf,alpha = 0.1,fill = "grey")+
+#   annotate("rect",xmin = 1.5,xmax = 2.5,ymin = -Inf,ymax = Inf,alpha = 0.3,fill = "grey")+
+#   annotate("rect",xmin = 2.5,xmax = 3.5,ymin = -Inf,ymax = Inf,alpha = 0.5,fill = "grey")+
+#   geom_boxplot(position = position_dodge(0.85),width = 0.6,notch = TRUE,outlier.colour = NA,size = rel(0.7))+
+#   theme_bw()+
+#   scale_fill_manual(values = mycolor)+
+#   scale_color_manual(values = mycolor)+
+#   scale_alpha_manual(values = c(1,0.3))+
+#   theme(panel.grid.major = element_blank(),
+#         strip.text = element_text(face = "bold",size = rel(1.5)),
+#         strip.background = element_rect(fill = "white"),
+#         axis.title = element_text(size = rel(1.5),face = "bold"),
+#         axis.text = element_text(size = rel(1.3),face = "bold"),
+#         legend.text = element_text(family = "serif",
+#                                    size = rel(1.5)),
+#         legend.title = element_text(family = "serif",
+#                                     size = rel(1.5)))+
+#   facet_grid(dropout_dim~graph,scales = "free_y")+
+#   xlab("Mixing degree")

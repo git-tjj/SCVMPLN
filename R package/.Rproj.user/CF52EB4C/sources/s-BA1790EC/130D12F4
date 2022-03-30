@@ -1,0 +1,27 @@
+{
+    "id": "130D12F4",
+    "path": "D:/Project/Pro_VMPLN/paper/SUPPLEMENTARY MATERIAL/Real data analysis/Benchmarking on scRNA-seq data/Kang's file/Method/VMPLN/train_VMPLN.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1648471562157.0,
+    "source_on_save": false,
+    "relative_order": 22,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "8,0",
+        "scrollLine": "0",
+        "disableDependencyDiscovery": "1"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1648372074,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1648372074,
+    "read_only": false,
+    "read_only_alternatives": []
+}

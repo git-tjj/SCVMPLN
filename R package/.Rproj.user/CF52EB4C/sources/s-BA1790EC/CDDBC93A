@@ -1,0 +1,26 @@
+{
+    "id": "CDDBC93A",
+    "path": "D:/Project/Pro_VMPLN/paper/SUPPLEMENTARY MATERIAL/Real data analysis/Application to scRNA-seq data from COVID-19 patients/Downstream analysis/Rcode/Part3_active TFs' GRN visualization.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1648471442865.0,
+    "source_on_save": false,
+    "relative_order": 19,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "9,55",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1648260584,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1648260584,
+    "read_only": false,
+    "read_only_alternatives": []
+}

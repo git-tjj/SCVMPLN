@@ -1,0 +1,63 @@
+prior_tran<-function(p_GRN,group_num,gene_GRN_name,prior_nw_list = NULL, prior_TF = NULL,weight_prior_nw = 0.3,penalize_diagonal = TRUE){
+  ################
+  ##weighted network
+  prior_nw_fill = list()
+  if(!is.null(prior_nw_list)){
+    # prior_nw_fill = prior_nw_list
+    prior_nw_fill = lapply(X = 1:length(prior_nw_list),FUN = function(g){return(prior_nw_list[[g]][1:p_GRN,1:p_GRN])})
+    for(g in 1:group_num){
+      if(is.null(prior_nw_fill[[g]])){
+        prior_nw_fill[[g]] <- matrix(0,nrow = p_GRN, ncol = p_GRN)
+      }
+    }
+  }else{
+    for(g in 1:group_num){
+      prior_nw_fill[[g]] <- matrix(0,nrow = p_GRN, ncol = p_GRN)
+    }
+  }
+
+  weight_mat_list<-list()
+  for(g in 1:group_num){
+    weight_mat0<-prior_nw_fill[[g]] * weight_prior_nw + (1 - prior_nw_fill[[g]])
+    if(penalize_diagonal == TRUE){
+      diag(weight_mat0)<-1
+    }else{
+      diag(weight_mat0)<-0
+    }
+    weight_mat_list[[g]]<-weight_mat0
+    ##
+    rm(weight_mat0);gc()
+  }
+  rm(prior_nw_fill)
+  
+  ##zero mat
+  prior_adjoint_mat = matrix(1,ncol = p_GRN,nrow = p_GRN)
+  if(!is.null(prior_TF)){
+    index <- which(gene_GRN_name %in% prior_TF)
+    index = setdiff(1:p_GRN, index) 
+    prior_adjoint_mat[index,index] = 0
+  }
+  
+  zero_mat<-NULL
+  zero_num<-length(which(prior_adjoint_mat[upper.tri(prior_adjoint_mat)] == 0))
+  if(zero_num > 0){
+    zero_mat<-matrix(NA,nrow = 0,ncol = 2)
+    for(i in 1:(p_GRN - 1)){
+      for(j in (i+1):p_GRN){
+        if(prior_adjoint_mat[i,j] == 0){
+          zero_mat<-rbind(zero_mat,c(i,j))
+        }
+      }
+    }
+  }
+  
+  return(list(weight_mat_list = weight_mat_list,
+              zero_mat = zero_mat))
+}
+
+##example
+# prior_tran(p_GRN = length(res_init$gene_GRN_index_use),group_num = length(unique(res_init$group_label_prior)),gene_GRN_name = res_init$gene_GRN_vec,prior_nw_list = NULL, prior_TF = NULL,weight_prior_nw = 0.3,penalize_diagonal = TRUE)
+# prior_tran_res<-prior_tran(p_GRN = length(res_init$gene_GRN_index_use),group_num = length(unique(res_init$group_label_prior)),gene_GRN_name = res_init$gene_GRN_vec,prior_nw_list = NULL, prior_TF = NULL,weight_prior_nw = 0.3,penalize_diagonal = TRUE)
+# 
+# weight_mat_list<-prior_tran_res$weight_mat_list
+# zero_mat<-prior_tran_res$zero_mat

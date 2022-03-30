@@ -1,0 +1,88 @@
+rm(list = ls())
+##Active TFs' GRN visulation
+##1. Package loading
+##--------------------------------------------------------------------------------------------
+library(igraph)
+library(RColorBrewer)
+##--------------------------------------------------------------------------------------------
+
+#2. Set up the overall file path
+##--------------------------------------------------------------------------------------------
+File_path<-"D:/Project/Pro_VMPLN/paper/SUPPLEMENTARY MATERIAL/Real data analysis/Application to scRNA-seq data from COVID-19 patients"
+##--------------------------------------------------------------------------------------------
+
+##3. Load data
+##--------------------------------------------------------------------------------------------
+load(paste(File_path,"/Downstream analysis/Obj_use/GRN_patient-type specific.Rdata",sep = ""))
+load(paste(File_path,"/Downstream analysis/Obj_use/annotation_row.Rdata",sep = ""))
+##--------------------------------------------------------------------------------------------
+
+##4. Data description & set the celltype for visualization
+##--------------------------------------------------------------------------------------------
+celltype_choose<-"Group4"
+patient_type<-c("MILD","SEV")
+TF_constraint<-c("TCF4","NR1H3","KLF5",##Enhanced
+                 "ELF3","JUN","EGR2","NR4A1","ATF3" ## SUppressed
+                 ) ## The active TF of Group4
+##--------------------------------------------------------------------------------------------
+
+##5.summary the edges' information
+##--------------------------------------------------------------------------------------------
+adjoint_mat_all<-matrix(NA,nrow = 0,ncol = 5)
+bbb<-as.matrix(Reduce("rbind",strsplit(rownames(annotation_row),"_")))
+for(patient_type_use in patient_type){
+  GRN_use<-GRN_patienttype_specific[[celltype_choose]][[patient_type_use]]$strength
+  GRN_sign_use<-GRN_patienttype_specific[[celltype_choose]][[patient_type_use]]$sign
+  TF_choose_vec<-bbb[which(bbb[,1] == celltype_choose & bbb[,2] %in% TF_constraint ),2]
+  Block_choose_vec<-annotation_row$Block[which(bbb[,1] == celltype_choose & bbb[,2] %in% TF_constraint)]
+  count<-0
+  for(TF_use in TF_choose_vec){
+    count<- count + 1
+    Target_choose<-which(GRN_use[TF_use,]!=0)
+    if(length(Target_choose)>0){
+      adjoint_mat_all<-rbind(adjoint_mat_all,cbind(rep(TF_use,length(Target_choose)),
+                                                   names(Target_choose),
+                                                   GRN_use[TF_use,Target_choose] * GRN_sign_use[TF_use,Target_choose],
+                                                   patient_type_use,
+                                                   rep((as.character(Block_choose_vec[count])),length(Target_choose))))
+    }
+  }
+}
+rownames(adjoint_mat_all)<-NULL
+adjoint_mat_all<-as.data.frame(adjoint_mat_all)
+names(adjoint_mat_all)<-c("TF","TARGET","Corr","patient_type","node_type")
+adjoint_mat_all$Corr<-as.numeric(adjoint_mat_all$Corr) 
+adjoint_mat_all$Corr_width<-rank(abs(adjoint_mat_all$Corr))/max(rank(abs(adjoint_mat_all$Corr))) * 5
+##--------------------------------------------------------------------------------------------
+
+##6. Visualize GRN for moderate and severe  patients using igraph package
+##--------------------------------------------------------------------------------------------
+##
+gu<-graph.data.frame(adjoint_mat_all[,c(1,2)],directed = TRUE)
+##node
+V(gu)$color<-ifelse(names(V(gu)) %in% unique(adjoint_mat_all$TF[which(adjoint_mat_all$node_type == "Suppressed")]),brewer.pal(9,"Set1")[2],
+                    ifelse(names(V(gu)) %in% unique(adjoint_mat_all$TF[which(adjoint_mat_all$node_type == "Enhanced")]),brewer.pal(9,"Set1")[1], brewer.pal(11,"RdGy")[8]))
+V(gu)$size<-ifelse(names(V(gu))%in% unique(adjoint_mat_all$TF),8,1.5)
+
+##edge
+E(gu)$color<-brewer.pal(9,"Set1")[c(1,2)][ifelse(adjoint_mat_all$node_type == "Enhanced",1,2)]
+E(gu)$width<-1.5
+
+##layout
+l_my<-layout.fruchterman.reingold(gu)
+
+##set the patient-type specific GRN to show
+patient_type_use<-"SEV" ## or "MILD"
+gu_sub_delete <- subgraph.edges(graph=gu,
+                                eids = which(adjoint_mat_all$patient_type == patient_type_use),
+                                delete.vertices = TRUE)
+node_delete<-setdiff((V(gu))$name,(V(gu_sub_delete))$name)
+##
+plot(gu_sub_delete,
+     vertex.label.dist = 1.5,
+     edge.arrow.size = 0,
+     vertex.label.cex = ifelse(names(V(gu_sub_delete)) %in% adjoint_mat_all[,1],1e-10,1e-30),
+     vertex.label.font = ifelse(names(V(gu_sub_delete)) %in% adjoint_mat_all[,1],2,1e-30),
+     vertex.label.color = "white",
+     layout = l_my[-which((V(gu))$name %in% node_delete),])
+##--------------------------------------------------------------------------------------------
