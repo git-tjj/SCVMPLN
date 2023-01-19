@@ -83,3 +83,5 @@ names(VMPLN_list_alongpath)<-paste("lambda: ",lambda_path,sep = "")
 ## Reference
 
 Please cite our work using the following references:
+
+Tang, J., Wang, C., Xiao, F., & Xi, R. (2022). Network Analysis of Count Data from Mixed Popula+ons. arXiv preprint arXiv:2212.03665.
